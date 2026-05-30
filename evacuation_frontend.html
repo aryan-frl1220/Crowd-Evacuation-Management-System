@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Smart Crowd Evacuation System</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #020b18;
+  --panel: #041425;
+  --panel2: #061d33;
+  --border: #0a4a7a;
+  --accent: #00d4ff;
+  --accent2: #00ff9d;
+  --danger: #ff3c5a;
+  --warn: #ffb300;
+  --text: #c8e8ff;
+  --dim: #4a7a9b;
+  --glow: 0 0 20px rgba(0,212,255,0.4);
+  --glow2: 0 0 20px rgba(0,255,157,0.4);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Exo 2', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-image:
+    radial-gradient(ellipse at 20% 20%, rgba(0,80,160,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(0,180,100,0.08) 0%, transparent 60%);
+}
+
+/* Grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── HEADER ── */
+header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 32px 20px 20px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(0,30,60,0.8) 0%, transparent 100%);
+}
+.header-badge {
+  display: inline-block;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--accent2);
+  border: 1px solid var(--accent2);
+  padding: 4px 16px;
+  margin-bottom: 16px;
+  animation: pulse-border 3s ease-in-out infinite;
+}
+@keyframes pulse-border {
+  0%,100% { box-shadow: 0 0 6px rgba(0,255,157,0.3); }
+  50% { box-shadow: 0 0 16px rgba(0,255,157,0.7); }
+}
+h1 {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(22px, 4vw, 42px);
+  font-weight: 900;
+  color: var(--accent);
+  text-shadow: var(--glow);
+  letter-spacing: 2px;
+  line-height: 1.2;
+}
+.subtitle {
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--dim);
+  font-size: 13px;
+  margin-top: 8px;
+  letter-spacing: 1px;
+}
+
+/* ── LAYOUT ── */
+.app {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  grid-template-rows: auto 1fr;
+  gap: 0;
+  min-height: calc(100vh - 130px);
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow-y: auto;
+  max-height: calc(100vh - 130px);
+}
+
+.section-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--dim);
+  padding: 14px 18px 8px;
+  border-bottom: 1px solid rgba(10,74,122,0.4);
+  text-transform: uppercase;
+}
+
+/* Node inputs */
+.node-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid rgba(10,74,122,0.2);
+  animation: slide-in 0.3s ease;
+}
+@keyframes slide-in {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.node-num {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--accent);
+  width: 22px;
+  flex-shrink: 0;
+}
+.node-row input[type=text] {
+  flex: 1;
+  background: rgba(0,30,60,0.6);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Exo 2', sans-serif;
+  font-size: 12px;
+  padding: 5px 8px;
+  border-radius: 3px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.node-row input[type=text]:focus { border-color: var(--accent); }
+.node-row label { font-size: 10px; color: var(--dim); display: flex; align-items: center; gap: 4px; cursor: pointer; }
+.node-row input[type=checkbox] { accent-color: var(--accent2); width: 13px; height: 13px; }
+.exit-star { color: var(--accent2); font-size: 14px; }
+.priority-star { color: var(--warn); font-size: 14px; }
+
+/* Edge inputs */
+.edge-row {
+  display: grid;
+  grid-template-columns: 30px 30px 46px 46px auto;
+  gap: 5px;
+  align-items: center;
+  padding: 5px 12px;
+  border-bottom: 1px solid rgba(10,74,122,0.2);
+  animation: slide-in 0.3s ease;
+}
+.edge-row input[type=number], .edge-row input[type=text] {
+  background: rgba(0,30,60,0.6);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  padding: 4px 5px;
+  border-radius: 3px;
+  width: 100%;
+  outline: none;
+  text-align: center;
+}
+.edge-row input:focus { border-color: var(--accent); }
+.edge-label { font-size: 9px; color: var(--dim); font-family: 'Share Tech Mono', monospace; text-align: center; }
+.blocked-toggle {
+  width: 26px; height: 26px;
+  background: rgba(255,60,90,0.1);
+  border: 1px solid rgba(255,60,90,0.3);
+  color: var(--danger);
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.blocked-toggle:hover, .blocked-toggle.active {
+  background: rgba(255,60,90,0.3);
+  border-color: var(--danger);
+  box-shadow: 0 0 8px rgba(255,60,90,0.4);
+}
+.blocked-toggle.active { color: #fff; }
+
+.del-btn {
+  width: 22px; height: 22px;
+  background: none; border: none;
+  color: var(--dim); cursor: pointer; font-size: 14px;
+  border-radius: 3px;
+  transition: color 0.2s;
+}
+.del-btn:hover { color: var(--danger); }
+
+/* Count controls */
+.count-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(10,74,122,0.3);
+}
+.count-row label { font-size: 12px; color: var(--text); flex: 1; }
+.count-btn {
+  width: 26px; height: 26px;
+  background: rgba(0,212,255,0.1);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.count-btn:hover { background: rgba(0,212,255,0.25); box-shadow: var(--glow); }
+.count-val {
+  font-family: 'Orbitron', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  width: 24px;
+  text-align: center;
+}
+
+/* Buttons */
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 11px 18px;
+  border: none; border-radius: 4px;
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.25s;
+  text-transform: uppercase;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #005580, #0088cc);
+  color: #fff;
+  border: 1px solid var(--accent);
+}
+.btn-primary:hover { box-shadow: var(--glow); transform: translateY(-1px); }
+.btn-go {
+  background: linear-gradient(135deg, #005533, #00aa66);
+  color: #fff;
+  border: 1px solid var(--accent2);
+  width: 100%;
+  padding: 13px;
+  font-size: 13px;
+}
+.btn-go:hover { box-shadow: var(--glow2); transform: translateY(-1px); }
+.btn-reset {
+  background: rgba(255,60,90,0.12);
+  color: var(--danger);
+  border: 1px solid rgba(255,60,90,0.3);
+}
+.btn-reset:hover { background: rgba(255,60,90,0.25); }
+
+.btn-row {
+  display: flex; gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(10,74,122,0.3);
+}
+
+.src-select {
+  width: 100%;
+  background: rgba(0,30,60,0.7);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-family: 'Orbitron', monospace;
+  font-size: 12px;
+  padding: 9px 12px;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  margin: 12px 14px;
+  width: calc(100% - 28px);
+  box-shadow: var(--glow);
+}
+
+/* ── MAIN AREA ── */
+.main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Canvas area */
+.canvas-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(0,50,100,0.15) 0%, transparent 70%);
+}
+#graphCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Result panel */
+.result-panel {
+  border-top: 1px solid var(--border);
+  background: var(--panel2);
+  padding: 0;
+  min-height: 160px;
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.result-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--dim);
+}
+.result-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--dim);
+  transition: all 0.3s;
+}
+.result-dot.active { background: var(--accent2); box-shadow: var(--glow2); animation: blink 1s ease-in-out 3; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.result-body {
+  padding: 14px 18px;
+  flex: 1;
+}
+.result-empty {
+  color: var(--dim);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  text-align: center;
+  padding: 30px;
+}
+
+.result-cards {
+  display: flex; gap: 14px; flex-wrap: wrap;
+  animation: fade-up 0.4s ease;
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.r-card {
+  background: rgba(0,30,60,0.6);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 16px;
+  min-width: 120px;
+}
+.r-card-label { font-size: 9px; letter-spacing: 2px; color: var(--dim); font-family: 'Share Tech Mono', monospace; text-transform: uppercase; }
+.r-card-val { font-family: 'Orbitron', monospace; font-size: 20px; color: var(--accent); margin-top: 4px; }
+.r-card-val.green { color: var(--accent2); }
+.r-card-val.red { color: var(--danger); }
+.r-card-val.warn { color: var(--warn); }
+
+.path-display {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  margin-top: 10px;
+}
+.path-node {
+  background: rgba(0,212,255,0.1);
+  border: 1px solid rgba(0,212,255,0.4);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: var(--accent);
+  transition: all 0.2s;
+}
+.path-node.exit-node {
+  background: rgba(0,255,157,0.15);
+  border-color: var(--accent2);
+  color: var(--accent2);
+  font-weight: bold;
+}
+.path-node.src-node {
+  background: rgba(255,179,0,0.15);
+  border-color: var(--warn);
+  color: var(--warn);
+}
+.path-arrow { color: var(--dim); font-size: 16px; }
+.path-cost {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: var(--dim);
+  margin: 0 2px;
+}
+
+.reason-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(0,212,255,0.07);
+  border: 1px solid rgba(0,212,255,0.2);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 11px;
+  color: var(--dim);
+  margin-top: 8px;
+}
+
+/* Stats bar */
+.stats-bar {
+  display: flex; gap: 0;
+  border-bottom: 1px solid var(--border);
+  background: rgba(0,10,20,0.4);
+}
+.stat-item {
+  flex: 1;
+  text-align: center;
+  padding: 8px 4px;
+  border-right: 1px solid rgba(10,74,122,0.3);
+  font-family: 'Share Tech Mono', monospace;
+}
+.stat-item:last-child { border-right: none; }
+.stat-n { font-size: 18px; font-family: 'Orbitron', monospace; color: var(--accent); }
+.stat-l { font-size: 9px; color: var(--dim); letter-spacing: 1px; margin-top: 2px; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--panel); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Legend */
+.legend {
+  position: absolute;
+  top: 12px; right: 12px;
+  background: rgba(2,11,24,0.85);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  backdrop-filter: blur(4px);
+}
+.legend-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.legend-row:last-child { margin-bottom: 0; }
+.leg-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+
+/* Tooltip */
+.tooltip {
+  position: absolute;
+  background: rgba(4,20,37,0.95);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--accent);
+  pointer-events: none;
+  display: none;
+  z-index: 100;
+  box-shadow: var(--glow);
+}
+
+.no-path-msg {
+  display: flex; align-items: center; gap: 10px;
+  color: var(--danger);
+  font-family: 'Orbitron', monospace;
+  font-size: 13px;
+  padding: 20px 0;
+}
+
+/* Column headers for edge table */
+.edge-col-headers {
+  display: grid;
+  grid-template-columns: 30px 30px 46px 46px auto;
+  gap: 5px;
+  padding: 4px 12px;
+  background: rgba(0,0,0,0.2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { max-height: 50vh; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚠ SMART CROWD EVACUATION SYSTEM</h1>
+  <p class="subtitle">Dijkstra's Algorithm · BFS Reachability · Dynamic Hazard Management</p>
+</header>
+
+<div class="app">
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+
+    <!-- Stats -->
+    <div class="stats-bar" id="statsBar">
+      <div class="stat-item"><div class="stat-n" id="sNodes">0</div><div class="stat-l">NODES</div></div>
+      <div class="stat-item"><div class="stat-n" id="sEdges">0</div><div class="stat-l">EDGES</div></div>
+      <div class="stat-item"><div class="stat-n" id="sExits">0</div><div class="stat-l">EXITS</div></div>
+      <div class="stat-item"><div class="stat-n" id="sBlocked">0</div><div class="stat-l">BLOCKED</div></div>
+    </div>
+
+    <!-- NODES section -->
+    <div class="section-title">① Node Setup</div>
+    <div class="count-row">
+      <label>Number of Nodes</label>
+      <button class="count-btn" onclick="changeNodeCount(-1)">−</button>
+      <span class="count-val" id="nodeCountVal">5</span>
+      <button class="count-btn" onclick="changeNodeCount(1)">+</button>
+    </div>
+    <div id="nodeInputs"></div>
+
+    <!-- EDGES section -->
+    <div class="section-title">② Edge Setup</div>
+    <div class="count-row">
+      <label>Number of Edges</label>
+      <button class="count-btn" onclick="changeEdgeCount(-1)">−</button>
+      <span class="count-val" id="edgeCountVal">0</span>
+      <button class="count-btn" onclick="changeEdgeCount(1)">+</button>
+    </div>
+    <div class="edge-col-headers">
+      <div class="edge-label">From</div>
+      <div class="edge-label">To</div>
+      <div class="edge-label">Dist</div>
+      <div class="edge-label">Crowd</div>
+      <div class="edge-label">🚫</div>
+    </div>
+    <div id="edgeInputs"></div>
+
+    <!-- Build -->
+    <div class="btn-row">
+      <button class="btn btn-primary" style="flex:1" onclick="buildGraph()">⚡ BUILD GRAPH</button>
+      <button class="btn btn-reset" onclick="resetAll()">↺ RESET</button>
+    </div>
+
+    <!-- Source + Run -->
+    <div class="section-title">③ Find Safe Exit</div>
+    <select class="src-select" id="srcSelect">
+      <option value="">— Select your location —</option>
+    </select>
+    <div style="padding: 0 14px 14px;">
+      <button class="btn btn-go" onclick="findPath()">▶ FIND EVACUATION PATH</button>
+    </div>
+
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <main class="main">
+    <div class="canvas-wrap">
+      <canvas id="graphCanvas"></canvas>
+      <div class="legend">
+        <div class="legend-row"><div class="leg-dot" style="background:#ffb300;box-shadow:0 0 8px #ffb300"></div> Source (You)</div>
+        <div class="legend-row"><div class="leg-dot" style="background:#00ff9d;box-shadow:0 0 8px #00ff9d"></div> Exit Node</div>
+        <div class="legend-row"><div class="leg-dot" style="background:#00d4ff;box-shadow:0 0 8px #00d4ff"></div> Regular Node</div>
+        <div class="legend-row"><div class="leg-dot" style="background:#ff3c5a;border-radius:2px"></div> Blocked Path</div>
+        <div class="legend-row"><div class="leg-dot" style="background:#ffb300;border-radius:2px"></div> Crowded Path</div>
+        <div class="legend-row"><div class="leg-dot" style="background:#00ff9d;border-radius:2px"></div> Safe Path</div>
+        <div class="legend-row"><div class="leg-dot" style="background:#00d4ff;border-radius:2px"></div> Normal Edge</div>
+      </div>
+      <div class="tooltip" id="tooltip"></div>
+    </div>
+
+    <div class="result-panel">
+      <div class="result-header">
+        <div class="result-dot" id="resultDot"></div>
+        EVACUATION RESULT
+      </div>
+      <div class="result-body" id="resultBody">
+        <div class="result-empty">Build the graph and click FIND EVACUATION PATH to see results here.</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────
+let nodeCount = 5;
+let edgeCount = 0;
+let graphBuilt = false;
+let nodes = [];   // {name, isExit, isPriority}
+let edges = [];   // {u, v, dist, crowd, blocked}
+let adjMatrix = [];
+let nodePositions = [];
+let bestPath = [];
+let bestExit = -1;
+let sourceNode = -1;
+
+const INF = 999999;
+
+// ─── INIT ─────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  renderNodeInputs();
+  renderEdgeInputs();
+  resizeCanvas();
+  drawGraph();
+});
+window.addEventListener('resize', () => { resizeCanvas(); drawGraph(); });
+
+// ─── NODE COUNT ───────────────────────────────────────────────
+function changeNodeCount(d) {
+  nodeCount = Math.max(2, Math.min(20, nodeCount + d));
+  document.getElementById('nodeCountVal').textContent = nodeCount;
+  renderNodeInputs();
+  renderEdgeInputs();
+  updateStats();
+}
+
+function renderNodeInputs() {
+  const c = document.getElementById('nodeInputs');
+  c.innerHTML = '';
+  for (let i = 0; i < nodeCount; i++) {
+    const old = nodes[i] || {};
+    const row = document.createElement('div');
+    row.className = 'node-row';
+    row.innerHTML = `
+      <span class="node-num">${i}</span>
+      <input type="text" placeholder="Name (e.g. Lobby)" value="${old.name||'Node-'+i}" id="nname_${i}" oninput="updateStats()"/>
+      <label><input type="checkbox" id="nexit_${i}" ${old.isExit?'checked':''} onchange="updateExitSelects()"/> <span class="exit-star">⬡</span></label>
+      <label><input type="checkbox" id="nprio_${i}" ${old.isPriority?'checked':''}/> <span class="priority-star">★</span></label>`;
+    c.appendChild(row);
+  }
+  updateExitSelects();
+  updateStats();
+}
+
+// ─── EDGE COUNT ───────────────────────────────────────────────
+function changeEdgeCount(d) {
+  edgeCount = Math.max(0, Math.min(50, edgeCount + d));
+  document.getElementById('edgeCountVal').textContent = edgeCount;
+  renderEdgeInputs();
+  updateStats();
+}
+
+function renderEdgeInputs() {
+  const c = document.getElementById('edgeInputs');
+  c.innerHTML = '';
+  for (let i = 0; i < edgeCount; i++) {
+    const old = edges[i] || {};
+    const row = document.createElement('div');
+    row.className = 'edge-row';
+    row.innerHTML = `
+      <input type="number" min="0" max="${nodeCount-1}" value="${old.u??0}" id="eu_${i}" placeholder="U"/>
+      <input type="number" min="0" max="${nodeCount-1}" value="${old.v??1}" id="ev_${i}" placeholder="V"/>
+      <input type="number" min="1" value="${old.dist??10}" id="ed_${i}" placeholder="Dist"/>
+      <input type="number" min="0" value="${old.crowd??0}" id="ec_${i}" placeholder="Crwd"/>
+      <button class="blocked-toggle ${old.blocked?'active':''}" id="eblk_${i}" onclick="toggleBlocked(${i})" title="Toggle blocked">✕</button>`;
+    c.appendChild(row);
+  }
+  updateStats();
+}
+
+function toggleBlocked(i) {
+  const btn = document.getElementById(`eblk_${i}`);
+  btn.classList.toggle('active');
+}
+
+// ─── BUILD GRAPH ──────────────────────────────────────────────
+function buildGraph() {
+  // Read nodes
+  nodes = [];
+  for (let i = 0; i < nodeCount; i++) {
+    nodes.push({
+      name: document.getElementById(`nname_${i}`).value || `Node-${i}`,
+      isExit: document.getElementById(`nexit_${i}`).checked,
+      isPriority: document.getElementById(`nprio_${i}`).checked
+    });
+  }
+
+  // Read edges
+  edges = [];
+  for (let i = 0; i < edgeCount; i++) {
+    const u = parseInt(document.getElementById(`eu_${i}`).value);
+    const v = parseInt(document.getElementById(`ev_${i}`).value);
+    const dist = parseInt(document.getElementById(`ed_${i}`).value) || 10;
+    const crowd = parseInt(document.getElementById(`ec_${i}`).value) || 0;
+    const blocked = document.getElementById(`eblk_${i}`).classList.contains('active');
+    if (u >= 0 && u < nodeCount && v >= 0 && v < nodeCount && u !== v)
+      edges.push({u, v, dist, crowd, blocked});
+  }
+
+  // Build adjacency matrix
+  adjMatrix = Array.from({length: nodeCount}, () => Array(nodeCount).fill(0));
+  for (const e of edges) {
+    if (e.blocked) {
+      adjMatrix[e.u][e.v] = -1;
+      adjMatrix[e.v][e.u] = -1;
+    } else {
+      const w = e.dist + e.crowd;
+      adjMatrix[e.u][e.v] = w;
+      adjMatrix[e.v][e.u] = w;
+    }
+  }
+
+  graphBuilt = true;
+  bestPath = [];
+  bestExit = -1;
+  sourceNode = -1;
+
+  layoutNodes();
+  updateExitSelects();
+  updateStats();
+  drawGraph();
+  showResultEmpty();
+}
+
+// ─── LAYOUT ──────────────────────────────────────────────────
+function layoutNodes() {
+  const canvas = document.getElementById('graphCanvas');
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H / 2;
+  const r = Math.min(W, H) * 0.36;
+  nodePositions = [];
+  for (let i = 0; i < nodeCount; i++) {
+    const angle = (2 * Math.PI * i / nodeCount) - Math.PI / 2;
+    nodePositions.push({
+      x: cx + r * Math.cos(angle),
+      y: cy + r * Math.sin(angle)
+    });
+  }
+  // Jitter for better spread with many nodes
+  if (nodeCount > 8) {
+    for (let i = 0; i < nodeCount; i++) {
+      const jitter = (nodeCount > 12) ? 20 : 10;
+      nodePositions[i].x += (Math.random() - 0.5) * jitter;
+      nodePositions[i].y += (Math.random() - 0.5) * jitter;
+    }
+  }
+}
+
+// ─── DIJKSTRA ─────────────────────────────────────────────────
+function dijkstra(src) {
+  const dist = Array(nodeCount).fill(INF);
+  const vis  = Array(nodeCount).fill(false);
+  const par  = Array(nodeCount).fill(-1);
+  dist[src] = 0;
+
+  for (let iter = 0; iter < nodeCount - 1; iter++) {
+    let u = -1, mn = INF;
+    for (let i = 0; i < nodeCount; i++)
+      if (!vis[i] && dist[i] < mn) { mn = dist[i]; u = i; }
+    if (u === -1) break;
+    vis[u] = true;
+    for (let v = 0; v < nodeCount; v++) {
+      const w = adjMatrix[u][v];
+      if (!vis[v] && w > 0 && dist[u] + w < dist[v]) {
+        dist[v] = dist[u] + w;
+        par[v]  = u;
+      }
+    }
+  }
+  return {dist, par};
+}
+
+function reconstructPath(par, dst) {
+  const path = [];
+  let cur = dst;
+  while (cur !== -1) { path.push(cur); cur = par[cur]; }
+  return path.reverse();
+}
+
+// ─── FIND PATH ────────────────────────────────────────────────
+function findPath() {
+  if (!graphBuilt) { alert('Please build the graph first!'); return; }
+  const sel = document.getElementById('srcSelect');
+  const src = parseInt(sel.value);
+  if (isNaN(src)) { alert('Please select your current location!'); return; }
+
+  sourceNode = src;
+  const {dist, par} = dijkstra(src);
+
+  // Collect exits
+  const exits = nodes.map((n, i) => n.isExit ? i : -1).filter(i => i !== -1);
+  if (!exits.length) { showNoPath('No exit nodes defined!'); return; }
+
+  // Priority exits first
+  let best = -1, bestDist = INF;
+  for (const e of exits)
+    if (nodes[e].isPriority && dist[e] < bestDist) { bestDist = dist[e]; best = e; }
+  if (best === -1)
+    for (const e of exits)
+      if (dist[e] < bestDist) { bestDist = dist[e]; best = e; }
+
+  if (best === -1 || bestDist === INF) { showNoPath('No safe path to any exit!'); return; }
+
+  bestExit = best;
+  bestPath = reconstructPath(par, best);
+
+  // Reason
+  let hasCrowd = false, hasBlocked = false;
+  for (const e of edges) {
+    if (e.blocked) hasBlocked = true;
+    if (e.crowd > 0) hasCrowd = true;
+  }
+  const reason = (hasBlocked && hasCrowd) ? 'Blocked & crowded paths avoided — safest alternate selected.'
+               : hasCrowd ? 'Crowd-weighted routing — less congested path preferred.'
+               : hasBlocked ? 'Blocked paths avoided — alternate route selected.'
+               : 'Optimal shortest path selected.';
+
+  // Dist to all exits
+  const exitDistances = exits.map(e => ({idx: e, name: nodes[e].name, d: dist[e], chosen: e === best}));
+
+  showResult(src, best, bestDist, bestPath, reason, exitDistances, dist);
+  drawGraph();
+}
+
+// ─── DRAW GRAPH ───────────────────────────────────────────────
+function resizeCanvas() {
+  const canvas = document.getElementById('graphCanvas');
+  const wrap = canvas.parentElement;
+  canvas.width  = wrap.clientWidth;
+  canvas.height = wrap.clientHeight;
+  if (graphBuilt) layoutNodes();
+}
+
+function drawGraph() {
+  const canvas = document.getElementById('graphCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  if (!graphBuilt || nodeCount === 0) {
+    // Placeholder
+    ctx.fillStyle = 'rgba(0,212,255,0.06)';
+    ctx.font = '13px Share Tech Mono';
+    ctx.textAlign = 'center';
+    ctx.fillText('Build the graph to visualize it here', W/2, H/2 - 10);
+    ctx.font = '11px Share Tech Mono';
+    ctx.fillStyle = 'rgba(0,212,255,0.03)';
+    ctx.fillText('← Configure nodes and edges in the left panel', W/2, H/2 + 16);
+    return;
+  }
+
+  const pathSet = new Set();
+  for (let i = 0; i < bestPath.length - 1; i++)
+    pathSet.add(`${bestPath[i]}-${bestPath[i+1]}`);
+
+  const NR = Math.max(18, Math.min(28, 300 / nodeCount));
+
+  // Draw edges
+  for (const e of edges) {
+    const p1 = nodePositions[e.u], p2 = nodePositions[e.v];
+    const onPath = pathSet.has(`${e.u}-${e.v}`) || pathSet.has(`${e.v}-${e.u}`);
+
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+
+    if (e.blocked) {
+      ctx.strokeStyle = '#ff3c5a';
+      ctx.lineWidth = onPath ? 3 : 1.5;
+      ctx.setLineDash([6, 4]);
+      ctx.globalAlpha = 0.7;
+    } else if (onPath) {
+      ctx.strokeStyle = '#00ff9d';
+      ctx.lineWidth = 3.5;
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+      ctx.shadowColor = '#00ff9d';
+      ctx.shadowBlur = 12;
+    } else if (e.crowd > 0) {
+      ctx.strokeStyle = '#ffb300';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]);
+      ctx.globalAlpha = 0.6;
+    } else {
+      ctx.strokeStyle = '#0a4a7a';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 0.8;
+    }
+
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+    ctx.setLineDash([]);
+
+    // Edge weight label
+    if (!e.blocked) {
+      const mx = (p1.x + p2.x) / 2;
+      const my = (p1.y + p2.y) / 2;
+      const w = e.dist + e.crowd;
+      ctx.font = '10px Share Tech Mono';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // Background pill
+      const lw = ctx.measureText(w).width + 8;
+      ctx.fillStyle = onPath ? 'rgba(0,255,157,0.15)' : 'rgba(2,11,24,0.8)';
+      ctx.beginPath();
+      ctx.roundRect(mx - lw/2, my - 8, lw, 16, 3);
+      ctx.fill();
+
+      ctx.fillStyle = onPath ? '#00ff9d' : (e.crowd > 0 ? '#ffb300' : '#4a7a9b');
+      ctx.fillText(w, mx, my);
+    } else {
+      const mx = (p1.x + p2.x) / 2;
+      const my = (p1.y + p2.y) / 2;
+      ctx.font = '11px Share Tech Mono';
+      ctx.fillStyle = '#ff3c5a';
+      ctx.textAlign = 'center';
+      ctx.fillText('✕', mx, my);
+    }
+  }
+
+  // Draw nodes
+  for (let i = 0; i < nodeCount; i++) {
+    const {x, y} = nodePositions[i];
+    const isSource = i === sourceNode;
+    const isExit = nodes[i].isExit;
+    const isPrio = nodes[i].isPriority;
+    const onPath = bestPath.includes(i);
+    const isBest = i === bestExit;
+
+    let color = '#00d4ff';
+    let glowColor = 'rgba(0,212,255,0.5)';
+    if (isSource) { color = '#ffb300'; glowColor = 'rgba(255,179,0,0.6)'; }
+    else if (isBest) { color = '#00ff9d'; glowColor = 'rgba(0,255,157,0.7)'; }
+    else if (isExit) { color = '#00cc80'; glowColor = 'rgba(0,204,128,0.5)'; }
+    else if (onPath) { color = '#00d4ff'; glowColor = 'rgba(0,212,255,0.5)'; }
+
+    // Glow
+    ctx.shadowColor = glowColor;
+    ctx.shadowBlur = onPath || isSource ? 20 : 10;
+
+    // Node circle
+    ctx.beginPath();
+    ctx.arc(x, y, NR, 0, Math.PI * 2);
+    const grad = ctx.createRadialGradient(x - NR*0.3, y - NR*0.3, 0, x, y, NR);
+    grad.addColorStop(0, `${color}33`);
+    grad.addColorStop(1, `${color}11`);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(x, y, NR, 0, Math.PI * 2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = onPath || isSource ? 2.5 : 1.5;
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+
+    // Exit indicator
+    if (isExit) {
+      ctx.beginPath();
+      ctx.arc(x, y, NR + 5, 0, Math.PI * 2);
+      ctx.strokeStyle = isPrio ? '#ffb300' : '#00ff9d';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Node index
+    ctx.font = `bold ${Math.max(10, NR * 0.55)}px Orbitron`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = color;
+    ctx.fillText(i, x, y);
+
+    // Node name
+    const label = (nodes[i].name || `Node-${i}`).substring(0, 10);
+    ctx.font = `${Math.max(9, NR * 0.45)}px Exo 2`;
+    ctx.fillStyle = onPath || isSource ? '#fff' : 'rgba(200,232,255,0.7)';
+    ctx.fillText(label, x, y + NR + 13);
+
+    // Exit / priority badge
+    if (isExit) {
+      ctx.font = '12px Arial';
+      ctx.fillText(isPrio ? '★' : '⬡', x + NR * 0.7, y - NR * 0.7);
+    }
+  }
+}
+
+// ─── RESULT DISPLAY ───────────────────────────────────────────
+function showResultEmpty() {
+  document.getElementById('resultBody').innerHTML =
+    '<div class="result-empty">Graph built! Select your location and click FIND EVACUATION PATH.</div>';
+  document.getElementById('resultDot').classList.remove('active');
+}
+
+function showNoPath(msg) {
+  document.getElementById('resultDot').classList.add('active');
+  document.getElementById('resultBody').innerHTML = `
+    <div class="no-path-msg">⚠ ${msg}</div>`;
+  drawGraph();
+}
+
+function showResult(src, best, bestDist, path, reason, exitDistances) {
+  document.getElementById('resultDot').classList.add('active');
+
+  const pathHTML = path.map((n, i) => {
+    const cls = n === src ? 'src-node' : (n === best ? 'exit-node' : '');
+    const label = nodes[n] ? nodes[n].name : `Node-${n}`;
+    let edgeCost = '';
+    if (i < path.length - 1) {
+      const w = adjMatrix[path[i]][path[i+1]];
+      edgeCost = `<span class="path-cost">(${w})</span><span class="path-arrow">→</span>`;
+    }
+    return `<span class="path-node ${cls}">${label}</span>${edgeCost}`;
+  }).join('');
+
+  const exitRows = exitDistances.map(e =>
+    `<span style="color:${e.chosen?'var(--accent2)':'var(--dim)'}; font-size:11px; margin-right:14px">
+      ${e.chosen?'✓ ':''}${e.name}: ${e.d >= INF ? '✕ UNREACHABLE' : e.d}
+    </span>`
+  ).join('');
+
+  document.getElementById('resultBody').innerHTML = `
+    <div class="result-cards">
+      <div class="r-card">
+        <div class="r-card-label">Best Exit</div>
+        <div class="r-card-val green">${nodes[best]?.name || best}</div>
+      </div>
+      <div class="r-card">
+        <div class="r-card-label">Total Cost</div>
+        <div class="r-card-val">${bestDist}</div>
+      </div>
+      <div class="r-card">
+        <div class="r-card-label">Hops</div>
+        <div class="r-card-val">${path.length - 1}</div>
+      </div>
+      ${nodes[best]?.isPriority ? `<div class="r-card"><div class="r-card-label">Type</div><div class="r-card-val warn">PRIORITY</div></div>` : ''}
+    </div>
+    <div class="path-display" style="margin-top:12px">${pathHTML}</div>
+    <div style="margin-top:10px; font-size:11px; font-family:'Share Tech Mono',monospace; color:var(--dim)">
+      All exits: ${exitRows}
+    </div>
+    <div class="reason-tag">ℹ ${reason}</div>`;
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────
+function updateExitSelects() {
+  const sel = document.getElementById('srcSelect');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">— Select your location —</option>';
+  for (let i = 0; i < nodeCount; i++) {
+    const n = nodes[i] || {};
+    const name = (document.getElementById(`nname_${i}`)?.value) || `Node-${i}`;
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `[${i}] ${name}`;
+    sel.appendChild(opt);
+  }
+  if (prev) sel.value = prev;
+}
+
+function updateStats() {
+  const nc = nodeCount;
+  const ec = edgeCount;
+  let exits = 0, blocked = 0;
+  for (let i = 0; i < nc; i++)
+    if (document.getElementById(`nexit_${i}`)?.checked) exits++;
+  for (let i = 0; i < ec; i++)
+    if (document.getElementById(`eblk_${i}`)?.classList.contains('active')) blocked++;
+
+  document.getElementById('sNodes').textContent  = nc;
+  document.getElementById('sEdges').textContent  = ec;
+  document.getElementById('sExits').textContent  = exits;
+  document.getElementById('sBlocked').textContent = blocked;
+}
+
+function resetAll() {
+  if (!confirm('Reset everything?')) return;
+  graphBuilt = false; bestPath = []; bestExit = -1; sourceNode = -1;
+  nodes = []; edges = []; adjMatrix = []; nodePositions = [];
+  document.getElementById('nodeCountVal').textContent = nodeCount;
+  document.getElementById('edgeCountVal').textContent = 0;
+  edgeCount = 0;
+  renderNodeInputs();
+  renderEdgeInputs();
+  updateStats();
+  drawGraph();
+  showResultEmpty();
+}
+
+// ─── TOOLTIP on hover ────────────────────────────────────────
+document.getElementById('graphCanvas').addEventListener('mousemove', (ev) => {
+  if (!graphBuilt) return;
+  const rect = ev.target.getBoundingClientRect();
+  const mx = ev.clientX - rect.left, my = ev.clientY - rect.top;
+  const NR = Math.max(18, Math.min(28, 300 / nodeCount));
+  const tip = document.getElementById('tooltip');
+  let found = false;
+  for (let i = 0; i < nodeCount; i++) {
+    const {x, y} = nodePositions[i];
+    if (Math.hypot(mx - x, my - y) <= NR + 4) {
+      const n = nodes[i];
+      tip.style.display = 'block';
+      tip.style.left = (mx + 12) + 'px';
+      tip.style.top  = (my - 10) + 'px';
+      tip.innerHTML  = `[${i}] ${n.name}${n.isExit ? ' · EXIT' : ''}${n.isPriority ? ' ★' : ''}`;
+      found = true; break;
+    }
+  }
+  if (!found) tip.style.display = 'none';
+});
+document.getElementById('graphCanvas').addEventListener('mouseleave', () => {
+  document.getElementById('tooltip').style.display = 'none';
+});
+
+// Preload a sample graph for demo
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    // Set default names
+    ['Lobby', 'Corridor', 'Room A', 'Stairwell', 'Exit Hall'].forEach((name, i) => {
+      const el = document.getElementById(`nname_${i}`);
+      if (el) el.value = name;
+    });
+    document.getElementById('nexit_3').checked = true;
+    document.getElementById('nprio_3').checked = true;
+    document.getElementById('nexit_4').checked = true;
+
+    // Add 6 edges
+    edgeCount = 6;
+    document.getElementById('edgeCountVal').textContent = 6;
+    renderEdgeInputs();
+
+    const edata = [[0,1,5,0],[0,2,8,3],[1,2,4,0],[1,3,10,2],[2,4,7,0],[3,4,6,0]];
+    edata.forEach(([u,v,d,c], i) => {
+      document.getElementById(`eu_${i}`).value = u;
+      document.getElementById(`ev_${i}`).value = v;
+      document.getElementById(`ed_${i}`).value = d;
+      document.getElementById(`ec_${i}`).value = c;
+    });
+
+    updateStats();
+    buildGraph();
+  }, 300);
+});
+</script>
+</body>
+</html>
